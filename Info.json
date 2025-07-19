@@ -1,0 +1,12 @@
+{
+  "Id": "junctionswitchreplacer",
+  "DisplayName": "Junction Switch Replacer",
+  "Author": "Fuggschen",
+  "Version": "0.1",
+  "ManagerVersion": "0.27.3",
+  "Requirements": [],
+  "AssemblyName": "JunctionSwitchReplacer.dll",
+  "EntryMethod": "JunctionSwitchReplacer.Main.Load",
+  "HomePage": "",
+  "Repository": ""
+}
