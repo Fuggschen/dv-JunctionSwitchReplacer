@@ -1,0 +1,72 @@
+# Build outputs
+bin/
+obj/
+*.dll
+*.pdb
+*.exe
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+*.userprefs
+
+# Build configuration
+Directory.Build.targets
+
+# Unity-specific
+*.unitypackage
+*.asset.meta
+*.prefab.meta
+
+# Temporary and cache files
+*.tmp
+*.temp
+*~
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# NuGet
+packages/
+*.nupkg
+nuget.exe
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# MSBuild
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# Rider IDE
+.idea/
+*.sln.iml
+
+# Local development
+*.local
+appsettings.local.json
+
+# Windows system files
+desktop.ini
+$RECYCLE.BIN/
+
+# Backup files
+*.backup
+*.bak
+*.orig
