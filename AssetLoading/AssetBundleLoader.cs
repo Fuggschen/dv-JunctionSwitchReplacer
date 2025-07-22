@@ -148,5 +148,98 @@ namespace JunctionSwitchReplacer.AssetLoading
                 return null;
             }
         }
+        
+        public static Material[] LoadMaterialsFromAssetBundle(string bundlePath, UnityModManager.ModEntry mod)
+        {
+            try
+            {
+                // If we don't have an asset bundle loaded, load it
+                if (loadedAssetBundle == null)
+                {
+                    loadedAssetBundle = AssetBundle.LoadFromFile(bundlePath);
+                    if (loadedAssetBundle == null)
+                    {
+                        mod.Logger.Error("Failed to load AssetBundle for materials - bundle is null");
+                        return null;
+                    }
+                }
+                
+                mod.Logger.Log("Attempting to load materials from AssetBundle...");
+                
+                // First try to get materials from GameObjects
+                var allGameObjects = loadedAssetBundle.LoadAllAssets<GameObject>();
+                
+                foreach (var prefab in allGameObjects)
+                {
+                    try
+                    {
+                        // Instantiate the prefab temporarily to get its materials
+                        var instance = UnityEngine.Object.Instantiate(prefab);
+                        if (instance != null)
+                        {
+                            var renderer = instance.GetComponent<Renderer>();
+                            if (renderer == null)
+                            {
+                                renderer = instance.GetComponentInChildren<Renderer>();
+                            }
+                            
+                            if (renderer?.materials != null && renderer.materials.Length > 0)
+                            {
+                                // Copy the materials array
+                                var materials = new Material[renderer.materials.Length];
+                                for (int i = 0; i < renderer.materials.Length; i++)
+                                {
+                                    materials[i] = renderer.materials[i];
+                                }
+                                
+                                mod.Logger.Log($"Successfully loaded {materials.Length} materials from GameObject: {prefab.name}");
+                                for (int i = 0; i < materials.Length; i++)
+                                {
+                                    mod.Logger.Log($"  Material {i}: {materials[i]?.name ?? "null"}");
+                                    if (materials[i]?.shader != null)
+                                    {
+                                        mod.Logger.Log($"    Shader: {materials[i].shader.name}");
+                                    }
+                                    if (materials[i]?.mainTexture != null)
+                                    {
+                                        mod.Logger.Log($"    Main texture: {materials[i].mainTexture.name}");
+                                    }
+                                }
+                                
+                                UnityEngine.Object.DestroyImmediate(instance);
+                                return materials;
+                            }
+                            
+                            UnityEngine.Object.DestroyImmediate(instance);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        mod.Logger.Error($"Failed to get materials from GameObject {prefab.name}: {ex.Message}");
+                    }
+                }
+                
+                // Fallback: Try direct material loading
+                mod.Logger.Log("No materials found in GameObjects, trying direct material loading...");
+                var allMaterials = loadedAssetBundle.LoadAllAssets<Material>();
+                if (allMaterials != null && allMaterials.Length > 0)
+                {
+                    mod.Logger.Log($"Found {allMaterials.Length} materials in AssetBundle");
+                    for (int i = 0; i < allMaterials.Length; i++)
+                    {
+                        mod.Logger.Log($"  Material {i}: {allMaterials[i]?.name ?? "null"}");
+                    }
+                    return allMaterials;
+                }
+                
+                mod.Logger.Warning("No materials found in AssetBundle");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                mod.Logger.Error($"Failed to load AssetBundle materials: {ex.Message}");
+                return null;
+            }
+        }
     }
 }

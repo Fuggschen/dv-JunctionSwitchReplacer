@@ -21,6 +21,8 @@ namespace JunctionSwitchReplacer.SwitchManagement
             modifiedSwitches = modifiedSwitchesSet;
         }
         
+        private bool IsDebugLoggingEnabled => Main.settings?.enableDebugLogging ?? false;
+        
         public void ApplyModificationToAllSwitches()
         {
             if (!modelManager.UseCustomModel)
@@ -88,7 +90,7 @@ namespace JunctionSwitchReplacer.SwitchManagement
             try
             {
                 // Debug first few switches to understand structure
-                if (modifiedSwitches.Count < 3)
+                if (modifiedSwitches.Count < 3 && IsDebugLoggingEnabled)
                 {
                     DebugVisualSwitchStructure(visualSwitch);
                 }
@@ -96,13 +98,19 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 // The VisualSwitch is just a trigger - find the actual switch models nearby
                 var nearbyRenderers = FindSwitchRenderersNearPosition(visualSwitch.transform.position);
                 
-                mod.Logger.Log($"Switch {visualSwitch.name}: Found {nearbyRenderers.Count} nearby switch renderers");
+                if (IsDebugLoggingEnabled)
+                {
+                    mod.Logger.Log($"Switch {visualSwitch.name}: Found {nearbyRenderers.Count} nearby switch renderers");
+                }
                 
                 bool anyModified = false;
 
                 foreach (var meshRenderer in nearbyRenderers)
                 {
-                    mod.Logger.Log($"  Checking nearby renderer: {meshRenderer.name}");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Log($"  Checking nearby renderer: {meshRenderer.name}");
+                    }
                     if (ApplyCustomMeshReplacement(meshRenderer.transform))
                     {
                         anyModified = true;
@@ -175,7 +183,7 @@ namespace JunctionSwitchReplacer.SwitchManagement
         
         private void DebugVisualSwitchStructure(VisualSwitch visualSwitch)
         {
-            if (visualSwitch?.gameObject == null) return;
+            if (visualSwitch?.gameObject == null || !IsDebugLoggingEnabled) return;
             
             mod.Logger.Log($"=== DEBUG: VisualSwitch '{visualSwitch.name}' Structure ===");
             
@@ -189,7 +197,7 @@ namespace JunctionSwitchReplacer.SwitchManagement
         
         private void LogTransformHierarchy(Transform transform, int depth, int maxDepth)
         {
-            if (depth > maxDepth) return;
+            if (depth > maxDepth || !IsDebugLoggingEnabled) return;
             
             string indent = new string(' ', depth * 2);
             var components = transform.GetComponents<Component>();
@@ -228,7 +236,10 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 if (IsSwitchPoleRenderer(renderer))
                 {
                     results.Add(renderer);
-                    mod.Logger.Log($"    Found switch pole renderer '{renderer.name}' at distance {distance:F2}");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Log($"    Found switch pole renderer '{renderer.name}' at distance {distance:F2}");
+                    }
                 }
             }
             
@@ -249,7 +260,10 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 if (name.Contains("lever") || name.Contains("handle") || name.Contains("arm") || 
                     name.Contains("actuator") || name.Contains("moving"))
                 {
-                    mod.Logger.Log($"    Skipping moving part: {current.name}");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Log($"    Skipping moving part: {current.name}");
+                    }
                     return false;
                 }
                 
@@ -258,7 +272,10 @@ namespace JunctionSwitchReplacer.SwitchManagement
                     (name.Contains("switch") && name.Contains("sign")) ||
                     (name.Contains("switch") && name.Contains("pole")))
                 {
-                    mod.Logger.Log($"    Found switch sign/pole: {current.name}");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Log($"    Found switch sign/pole: {current.name}");
+                    }
                     return true;
                 }
                 
@@ -282,7 +299,10 @@ namespace JunctionSwitchReplacer.SwitchManagement
                     (meshName.Contains("switch") && meshName.Contains("sign")) ||
                     (meshName.Contains("switch") && meshName.Contains("pole")))
                 {
-                    mod.Logger.Log($"    Found switch sign/pole mesh: {meshFilter.mesh.name}");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Log($"    Found switch sign/pole mesh: {meshFilter.mesh.name}");
+                    }
                     return true;
                 }
             }
@@ -298,11 +318,17 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 var renderer = meshTransform.GetComponent<Renderer>();
                 if (meshFilter?.mesh == null || renderer == null) 
                 {
-                    mod.Logger.Warning("No MeshFilter or Renderer found on transform");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Warning("No MeshFilter or Renderer found on transform");
+                    }
                     return false;
                 }
                 
-                mod.Logger.Log($"Original mesh: {meshFilter.mesh.name} (vertices: {meshFilter.mesh.vertexCount})");
+                if (IsDebugLoggingEnabled)
+                {
+                    mod.Logger.Log($"Original mesh: {meshFilter.mesh.name} (vertices: {meshFilter.mesh.vertexCount})");
+                }
                 
                 // Store original mesh and materials for restoration
                 var originalMeshComponent = meshTransform.gameObject.GetComponent<OriginalMeshReference>();
@@ -311,59 +337,116 @@ namespace JunctionSwitchReplacer.SwitchManagement
                     originalMeshComponent = meshTransform.gameObject.AddComponent<OriginalMeshReference>();
                     originalMeshComponent.originalMesh = meshFilter.mesh;
                     originalMeshComponent.originalMaterials = renderer.materials; // Store materials too
-                    mod.Logger.Log("Stored original mesh and materials for restoration");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Log("Stored original mesh and materials for restoration");
+                    }
                 }
                 
                 // Load custom mesh
                 Mesh customMesh = modelManager.LoadCustomMesh();
                 if (customMesh == null)
                 {
-                    mod.Logger.Warning("Custom mesh is null - LoadCustomMesh failed");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Warning("Custom mesh is null - LoadCustomMesh failed");
+                    }
                     return false;
                 }
                 
-                mod.Logger.Log($"Custom mesh: {customMesh.name} (vertices: {customMesh.vertexCount})");
-                mod.Logger.Log($"Custom mesh has UV coordinates: {customMesh.uv != null && customMesh.uv.Length > 0}");
-                mod.Logger.Log($"Custom mesh has normals: {customMesh.normals != null && customMesh.normals.Length > 0}");
+                if (IsDebugLoggingEnabled)
+                {
+                    mod.Logger.Log($"Custom mesh: {customMesh.name} (vertices: {customMesh.vertexCount})");
+                    mod.Logger.Log($"Custom mesh has UV coordinates: {customMesh.uv != null && customMesh.uv.Length > 0}");
+                    mod.Logger.Log($"Custom mesh has normals: {customMesh.normals != null && customMesh.normals.Length > 0}");
+                }
                 
                 // Try to preserve the original UV mapping by copying it to the custom mesh
                 if (meshFilter.mesh.uv != null && meshFilter.mesh.uv.Length > 0 && 
                     customMesh.vertexCount <= meshFilter.mesh.vertexCount)
                 {
-                    mod.Logger.Log("Attempting to preserve original UV mapping...");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Log("Attempting to preserve original UV mapping...");
+                    }
                     var originalUVs = new Vector2[customMesh.vertexCount];
                     Array.Copy(meshFilter.mesh.uv, originalUVs, Math.Min(customMesh.vertexCount, meshFilter.mesh.uv.Length));
                     customMesh.uv = originalUVs;
-                    mod.Logger.Log("Applied original UV coordinates to custom mesh");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Log("Applied original UV coordinates to custom mesh");
+                    }
                 }
                 
                 // Replace the mesh with our custom version
                 meshFilter.mesh = customMesh;
                 
-                // Log material info and save textures for extraction
-                mod.Logger.Log($"Renderer has {renderer.materials.Length} materials:");
-                for (int i = 0; i < renderer.materials.Length; i++)
+                // Apply custom materials if setting is enabled and materials are available
+                if (Main.settings?.useCustomMaterials == true)
                 {
-                    var mat = renderer.materials[i];
-                    mod.Logger.Log($"  Material {i}: {mat?.name ?? "null"}");
-                    if (mat?.mainTexture != null)
+                    var customMaterials = modelManager.LoadCustomMaterials();
+                    if (customMaterials != null && customMaterials.Length > 0)
                     {
-                        mod.Logger.Log($"    Main texture: {mat.mainTexture.name}");
-                        mod.Logger.Log($"    Texture size: {mat.mainTexture.width}x{mat.mainTexture.height}");
-                        
-                        // Try to save the texture for reference
-                        SaveTextureFromMaterial(mat, i);
+                        renderer.materials = customMaterials;
+                        if (IsDebugLoggingEnabled)
+                        {
+                            mod.Logger.Log($"Applied {customMaterials.Length} custom materials from AssetBundle");
+                            for (int i = 0; i < customMaterials.Length; i++)
+                            {
+                                var mat = customMaterials[i];
+                                mod.Logger.Log($"  Custom Material {i}: {mat?.name ?? "null"}");
+                                if (mat?.shader != null)
+                                {
+                                    mod.Logger.Log($"    Shader: {mat.shader.name}");
+                                }
+                                if (mat?.mainTexture != null)
+                                {
+                                    mod.Logger.Log($"    Main texture: {mat.mainTexture.name}");
+                                    mod.Logger.Log($"    Texture size: {mat.mainTexture.width}x{mat.mainTexture.height}");
+                                }
+                            }
+                        }
                     }
-                    if (mat?.shader != null)
+                    else
                     {
-                        mod.Logger.Log($"    Shader: {mat.shader.name}");
+                        if (IsDebugLoggingEnabled)
+                        {
+                            mod.Logger.Log("No custom materials found in AssetBundle, keeping original materials");
+                        }
+                    }
+                }
+                else
+                {
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Log("Custom materials disabled in settings, keeping original materials");
                     }
                 }
                 
-                // Keep the original materials to preserve colors and textures
-                mod.Logger.Log($"Preserving {renderer.materials.Length} original materials");
-                
-                mod.Logger.Log($"Mesh replacement complete. New mesh: {meshFilter.mesh.name}");
+                if (IsDebugLoggingEnabled)
+                {
+                    // Log current material info after replacement
+                    mod.Logger.Log($"Final renderer has {renderer.materials.Length} materials:");
+                    for (int i = 0; i < renderer.materials.Length; i++)
+                    {
+                        var mat = renderer.materials[i];
+                        mod.Logger.Log($"  Material {i}: {mat?.name ?? "null"}");
+                        if (mat?.mainTexture != null)
+                        {
+                            mod.Logger.Log($"    Main texture: {mat.mainTexture.name}");
+                            mod.Logger.Log($"    Texture size: {mat.mainTexture.width}x{mat.mainTexture.height}");
+                            
+                            // Try to save the texture for reference
+                            SaveTextureFromMaterial(mat, i);
+                        }
+                        if (mat?.shader != null)
+                        {
+                            mod.Logger.Log($"    Shader: {mat.shader.name}");
+                        }
+                    }
+                    
+                    mod.Logger.Log($"Mesh replacement complete. New mesh: {meshFilter.mesh.name}");
+                }
                 return true;
             }
             catch (Exception ex)
@@ -377,7 +460,7 @@ namespace JunctionSwitchReplacer.SwitchManagement
         {
             try
             {
-                if (material?.mainTexture == null) return;
+                if (material?.mainTexture == null || !IsDebugLoggingEnabled) return;
                 
                 var texture = material.mainTexture as Texture2D;
                 if (texture == null) return;

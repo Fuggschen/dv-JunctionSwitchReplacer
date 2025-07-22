@@ -9,6 +9,7 @@ namespace JunctionSwitchReplacer.Core
     public class CustomModelManager
     {
         private static Mesh customSwitchMesh = null;
+        private static Material[] customSwitchMaterials = null;
         private static string customModelPath = "";
         private static bool useCustomModel = false;
         
@@ -28,6 +29,7 @@ namespace JunctionSwitchReplacer.Core
             {
                 // Clear previous state
                 customSwitchMesh = null;
+                customSwitchMaterials = null;
                 AssetBundleLoader.UnloadAssetBundle();
                 customModelPath = "";
                 useCustomModel = false;
@@ -106,7 +108,43 @@ namespace JunctionSwitchReplacer.Core
         public void ClearCache()
         {
             customSwitchMesh = null;
+            customSwitchMaterials = null;
             AssetBundleLoader.UnloadAssetBundle();
+        }
+        
+        public Material[] LoadCustomMaterials()
+        {
+            if (customSwitchMaterials != null)
+            {
+                return customSwitchMaterials;
+            }
+
+            try
+            {
+                // Only load from AssetBundle
+                if (!string.IsNullOrEmpty(customModelPath) && File.Exists(customModelPath))
+                {
+                    mod.Logger.Log($"Loading materials from AssetBundle: {customModelPath}");
+                    customSwitchMaterials = AssetBundleLoader.LoadMaterialsFromAssetBundle(customModelPath, mod);
+                    if (customSwitchMaterials != null && customSwitchMaterials.Length > 0)
+                    {
+                        mod.Logger.Log($"Successfully loaded {customSwitchMaterials.Length} materials from AssetBundle!");
+                        return customSwitchMaterials;
+                    }
+                    else
+                    {
+                        mod.Logger.Warning("AssetBundle material loading returned null or empty");
+                    }
+                }
+                
+                mod.Logger.Warning("No materials found in AssetBundle");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                mod.Logger.Error($"Failed to load custom materials: {ex.Message}");
+                return null;
+            }
         }
     }
 }

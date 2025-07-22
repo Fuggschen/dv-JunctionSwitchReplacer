@@ -54,6 +54,25 @@ namespace JunctionSwitchReplacer.UI
             
             GUILayout.Space(10);
             
+            // Debug logging toggle
+            var settings = Main.settings;
+            bool newDebugState = GUILayout.Toggle(settings.enableDebugLogging, "Enable Debug Logging");
+            if (newDebugState != settings.enableDebugLogging)
+            {
+                settings.enableDebugLogging = newDebugState;
+                mod.Logger.Log($"Debug logging {(newDebugState ? "enabled" : "disabled")}");
+            }
+            
+            // Custom materials toggle
+            bool newMaterialsState = GUILayout.Toggle(settings.useCustomMaterials, "Use Custom Materials");
+            if (newMaterialsState != settings.useCustomMaterials)
+            {
+                settings.useCustomMaterials = newMaterialsState;
+                mod.Logger.Log($"Use custom materials {(newMaterialsState ? "enabled" : "disabled")}");
+            }
+            
+            GUILayout.Space(10);
+            
             // Status information - use cached values for performance
             cacheManager.UpdateSwitchCountCacheIfNeeded();
             int modifiedCount = getModifiedSwitchesCount();
