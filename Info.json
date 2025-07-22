@@ -7,6 +7,6 @@
   "Requirements": [],
   "AssemblyName": "JunctionSwitchReplacer.dll",
   "EntryMethod": "JunctionSwitchReplacer.Main.Load",
-  "HomePage": "",
-  "Repository": ""
+  "HomePage": "https://www.nexusmods.com/derailvalley/mods/1229",
+  "Repository": "https://raw.githubusercontent.com/Fuggschen/dv-JunctionSwitchReplacer/refs/heads/main/Resources/repository.json"
 }
