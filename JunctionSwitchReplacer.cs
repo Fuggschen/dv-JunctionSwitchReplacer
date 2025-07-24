@@ -4,7 +4,6 @@ using System.Reflection;
 using UnityModManagerNet;
 using HarmonyLib;
 using JunctionSwitchReplacer.Core;
-using JunctionSwitchReplacer.UI;
 using JunctionSwitchReplacer.SwitchManagement;
 using JunctionSwitchReplacer.Patches;
 using JunctionSwitchReplacer.AssetLoading;
@@ -22,7 +21,6 @@ namespace JunctionSwitchReplacer
         private static CustomModelManager modelManager;
         private static SwitchProcessor switchProcessor;
         private static CacheManager cacheManager;
-        private static ModGUI modGUI;
         
         // Track modified switches to avoid double-processing
         private static HashSet<int> modifiedSwitches = new HashSet<int>();
@@ -34,8 +32,8 @@ namespace JunctionSwitchReplacer
             settings = Settings.Load<Settings>(modEntry);
             
             modEntry.OnToggle = OnToggle;
-            modEntry.OnGUI = OnGUI;
             modEntry.OnSaveGUI = OnSaveGUI;
+            modEntry.OnGUI = OnGUI;
             modEntry.OnUnload = Unload;
 
             // Initialize core components
@@ -56,16 +54,6 @@ namespace JunctionSwitchReplacer
             modelManager = new CustomModelManager(mod);
             cacheManager = new CacheManager();
             switchProcessor = new SwitchProcessor(mod, modelManager, modifiedSwitches);
-            
-            modGUI = new ModGUI(
-                mod, 
-                modelManager, 
-                cacheManager,
-                OnApplyCustomModel,
-                OnRestoreOriginal,
-                OnReloadCustomModel,
-                () => modifiedSwitches.Count
-            );
             
             // Initialize model manager and cache
             modelManager.Initialize();
@@ -110,24 +98,37 @@ namespace JunctionSwitchReplacer
             return true;
         }
 
-        // GUI for mod settings
-        static void OnGUI(UnityModManager.ModEntry modEntry)
-        {
-            modGUI?.DrawGUI();
-        }
-
         // Save settings
         static void OnSaveGUI(UnityModManager.ModEntry modEntry)
         {
             settings.Save(modEntry);
         }
 
-        // Action handlers for GUI buttons
-        private static void OnApplyCustomModel()
+        // Draw settings GUI
+        static void OnGUI(UnityModManager.ModEntry modEntry)
         {
-            modifiedSwitches.Clear();
-            switchProcessor.ApplyModificationToAllSwitches();
-            cacheManager.UpdateSwitchCountCache();
+            settings.OnGUI(modEntry);
+        }
+
+        // Action handlers for GUI buttons
+        public static void OnApplyCustomModel()
+        {
+            mod.Logger.Log("Applying custom model...");
+            
+            // First reinitialize the model manager to use the currently selected asset bundle
+            modelManager.Initialize();
+            
+            if (modelManager.UseCustomModel)
+            {
+                modifiedSwitches.Clear();
+                switchProcessor.ApplyModificationToAllSwitches();
+                cacheManager.UpdateSwitchCountCache();
+                mod.Logger.Log("Apply custom model completed.");
+            }
+            else
+            {
+                mod.Logger.Warning("No custom model available. Check asset bundle selection.");
+            }
         }
 
         private static void OnRestoreOriginal()
