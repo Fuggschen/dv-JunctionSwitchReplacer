@@ -111,7 +111,7 @@ namespace JunctionSwitchReplacer.SwitchManagement
                     modifiedSwitches.Add(switchId);
                     return true;
                 }
-                else
+                else if (nearbyRenderers.Count == 0)
                 {
                     mod.Logger.Warning($"No suitable renderers found near switch: {visualSwitch.name}");
                 }
@@ -329,46 +329,11 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 // Replace the mesh with our custom version
                 meshFilter.mesh = customMesh;
                 
-                // Apply custom materials if setting is enabled and materials are available
-                if (Main.settings?.useCustomMaterials == true)
+                // Always apply custom materials if they are available
+                var customMaterials = modelManager.LoadCustomMaterials();
+                if (customMaterials != null && customMaterials.Length > 0)
                 {
-                    var customMaterials = modelManager.LoadCustomMaterials();
-                    if (customMaterials != null && customMaterials.Length > 0)
-                    {
-                        renderer.materials = customMaterials;
-                        if (IsDebugLoggingEnabled)
-                        {
-                            mod.Logger.Log($"Applied {customMaterials.Length} custom materials from AssetBundle");
-                            for (int i = 0; i < customMaterials.Length; i++)
-                            {
-                                var mat = customMaterials[i];
-                                mod.Logger.Log($"  Custom Material {i}: {mat?.name ?? "null"}");
-                                if (mat?.shader != null)
-                                {
-                                    mod.Logger.Log($"    Shader: {mat.shader.name}");
-                                }
-                                if (mat?.mainTexture != null)
-                                {
-                                    mod.Logger.Log($"    Main texture: {mat.mainTexture.name}");
-                                    mod.Logger.Log($"    Texture size: {mat.mainTexture.width}x{mat.mainTexture.height}");
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (IsDebugLoggingEnabled)
-                        {
-                            mod.Logger.Log("No custom materials found in AssetBundle, keeping original materials");
-                        }
-                    }
-                }
-                else
-                {
-                    if (IsDebugLoggingEnabled)
-                    {
-                        mod.Logger.Log("Custom materials disabled in settings, keeping original materials");
-                    }
+                    renderer.materials = customMaterials;
                 }
                 
                 return true;
@@ -377,35 +342,6 @@ namespace JunctionSwitchReplacer.SwitchManagement
             {
                 mod.Logger.Error($"Failed to apply custom mesh replacement: {ex.Message}");
                 return false;
-            }
-        }
-        
-        private void SaveTextureFromMaterial(Material material, int materialIndex)
-        {
-            try
-            {
-                if (material?.mainTexture == null || !IsDebugLoggingEnabled) return;
-                
-                var texture = material.mainTexture as Texture2D;
-                if (texture == null) return;
-                
-                mod.Logger.Log($"Texture details for extraction:");
-                mod.Logger.Log($"  Name: {texture.name}");
-                mod.Logger.Log($"  Format: {texture.format}");
-                mod.Logger.Log($"  Size: {texture.width}x{texture.height}");
-                mod.Logger.Log($"  Is Readable: {texture.isReadable}");
-                mod.Logger.Log($"  Material: {material.name}");
-                mod.Logger.Log($"  Shader: {material.shader?.name}");
-                
-                // Note: For full texture extraction, use external tools like:
-                // - AssetStudio (https://github.com/Perfare/AssetStudio)
-                // - UABE (Unity Assets Bundle Extractor)
-                // - DevX UnityUnpacker
-                mod.Logger.Log("Use AssetStudio or UABE to extract textures from Derail Valley's data files");
-            }
-            catch (Exception ex)
-            {
-                mod.Logger.Error($"Failed to analyze texture: {ex.Message}");
             }
         }
     }
