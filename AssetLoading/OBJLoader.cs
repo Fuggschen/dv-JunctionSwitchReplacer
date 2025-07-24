@@ -70,7 +70,6 @@ namespace JunctionSwitchReplacer.AssetLoading
                     if (uvs.Count == vertices.Count)
                     {
                         mesh.uv = uvs.ToArray();
-                        mod.Logger.Log($"OBJ loaded with {uvs.Count} UV coordinates");
                     }
                     else
                     {
@@ -87,14 +86,12 @@ namespace JunctionSwitchReplacer.AssetLoading
                             generatedUVs[i] = new Vector2(u, vCoord);
                         }
                         mesh.uv = generatedUVs;
-                        mod.Logger.Log($"Generated {generatedUVs.Length} UV coordinates (cylindrical mapping for pole)");
                     }
                     
                     mesh.RecalculateNormals();
                     mesh.RecalculateBounds();
                     mesh.name = "Custom OBJ Switch Setter";
                     
-                    mod.Logger.Log($"OBJ mesh created successfully: {vertices.Count} vertices, {triangles.Count/3} triangles");
                     return mesh;
                 }
             }

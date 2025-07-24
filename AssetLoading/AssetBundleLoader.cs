@@ -24,7 +24,13 @@ namespace JunctionSwitchReplacer.AssetLoading
         {
             try
             {
-                mod.Logger.Log($"Attempting to load AssetBundle from: {bundlePath}");
+                bool debugEnabled = Main.settings?.enableDebugLogging == true;
+                
+                if (debugEnabled)
+                {
+                    mod.Logger.Log($"=== AssetBundle Loading Debug ===");
+                    mod.Logger.Log($"Loading asset bundle from: {bundlePath}");
+                }
                 
                 // Unload previous AssetBundle if exists
                 UnloadAssetBundle();
@@ -37,36 +43,63 @@ namespace JunctionSwitchReplacer.AssetLoading
                     return null;
                 }
                 
-                mod.Logger.Log($"AssetBundle loaded successfully. Asset names: {string.Join(", ", loadedAssetBundle.GetAllAssetNames())}");
+                if (debugEnabled)
+                    mod.Logger.Log("AssetBundle loaded successfully");
+                
+                // Debug: List all assets in the bundle
+                var allAssetNames = loadedAssetBundle.GetAllAssetNames();
+                if (debugEnabled)
+                {
+                    mod.Logger.Log($"Assets in bundle ({allAssetNames.Length} total):");
+                    foreach (string assetName in allAssetNames)
+                    {
+                        mod.Logger.Log($"  - {assetName}");
+                    }
+                }
                 
                 // First try to load OBJ file from the AssetBundle
+                if (debugEnabled)
+                    mod.Logger.Log("Trying to load OBJ file: assets/switch_sign.obj");
                 var objAsset = loadedAssetBundle.LoadAsset<TextAsset>("assets/switch_sign.obj");
                 if (objAsset != null)
                 {
-                    mod.Logger.Log("Found switch_sign.obj in AssetBundle, parsing...");
+                    if (debugEnabled)
+                        mod.Logger.Log("Found switch_sign.obj, attempting to parse...");
                     var mesh = OBJLoader.LoadMeshFromText(objAsset.text, mod);
                     if (mesh != null)
                     {
                         mesh.name = "AssetBundle_OBJ_switch_sign";
-                        mod.Logger.Log($"Successfully loaded OBJ from AssetBundle: {mesh.vertexCount} vertices, {mesh.triangles.Length/3} triangles");
+                        mod.Logger.Log("Successfully loaded mesh from OBJ file");
                         return mesh;
                     }
+                    else
+                    {
+                        mod.Logger.Warning("OBJ parsing failed");
+                    }
+                }
+                else
+                {
+                    if (debugEnabled)
+                        mod.Logger.Log("No switch_sign.obj found at assets/switch_sign.obj");
                 }
                 
                 // Try to find other OBJ files in the bundle
-                foreach (string assetName in loadedAssetBundle.GetAllAssetNames())
+                if (debugEnabled)
+                    mod.Logger.Log("Searching for other OBJ files...");
+                foreach (string assetName in allAssetNames)
                 {
                     if (assetName.EndsWith(".obj", StringComparison.OrdinalIgnoreCase))
                     {
+                        if (debugEnabled)
+                            mod.Logger.Log($"Found OBJ file: {assetName}");
                         var objTextAsset = loadedAssetBundle.LoadAsset<TextAsset>(assetName);
                         if (objTextAsset != null)
                         {
-                            mod.Logger.Log($"Found OBJ file in AssetBundle: {assetName}, parsing...");
                             var mesh = OBJLoader.LoadMeshFromText(objTextAsset.text, mod);
                             if (mesh != null)
                             {
                                 mesh.name = $"AssetBundle_OBJ_{Path.GetFileNameWithoutExtension(assetName)}";
-                                mod.Logger.Log($"Successfully loaded OBJ from AssetBundle: {mesh.vertexCount} vertices");
+                                mod.Logger.Log($"Successfully loaded mesh from OBJ: {assetName}");
                                 return mesh;
                             }
                         }
@@ -74,11 +107,16 @@ namespace JunctionSwitchReplacer.AssetLoading
                 }
                 
                 // Fallback: Try to instantiate GameObjects and use their meshes directly
-                mod.Logger.Log("No OBJ files found, trying to instantiate GameObjects...");
+                if (debugEnabled)
+                    mod.Logger.Log("Trying GameObject instantiation method...");
                 var allGameObjects = loadedAssetBundle.LoadAllAssets<GameObject>();
+                if (debugEnabled)
+                    mod.Logger.Log($"Found {allGameObjects.Length} GameObjects in bundle");
                 
                 foreach (var prefab in allGameObjects)
                 {
+                    if (debugEnabled)
+                        mod.Logger.Log($"Checking GameObject: {prefab.name}");
                     try
                     {
                         // Instantiate the prefab temporarily
@@ -96,12 +134,17 @@ namespace JunctionSwitchReplacer.AssetLoading
                                 // Use the mesh directly from the instantiated object
                                 var mesh = meshFilter.sharedMesh;
                                 mesh.name = $"AssetBundle_GameObject_{prefab.name}";
-                                mod.Logger.Log($"Successfully got mesh from instantiated GameObject: {mesh.vertexCount} vertices");
+                                mod.Logger.Log($"Successfully loaded mesh from GameObject: {prefab.name}");
                                 
                                 // Don't destroy the instance yet, let Unity handle cleanup
                                 // The mesh will remain valid even after the instance is destroyed
                                 UnityEngine.Object.DestroyImmediate(instance);
                                 return mesh;
+                            }
+                            else
+                            {
+                                if (debugEnabled)
+                                    mod.Logger.Log($"GameObject {prefab.name} has no usable MeshFilter");
                             }
                             
                             UnityEngine.Object.DestroyImmediate(instance);
@@ -114,7 +157,7 @@ namespace JunctionSwitchReplacer.AssetLoading
                 }
                 
                 // Last resort: try direct mesh loading (this will likely fail due to isReadable=false)
-                mod.Logger.Log("Trying direct mesh loading as last resort...");
+                mod.Logger.Log("Trying direct mesh loading...");
                 Mesh loadedMesh = null;
                 
                 // Look for common mesh names first
@@ -122,20 +165,28 @@ namespace JunctionSwitchReplacer.AssetLoading
                 
                 foreach (string meshName in commonMeshNames)
                 {
+                    mod.Logger.Log($"Checking for mesh named: {meshName}");
                     loadedMesh = loadedAssetBundle.LoadAsset<Mesh>(meshName);
                     if (loadedMesh != null)
                     {
-                        mod.Logger.Log($"Found mesh with name: {meshName} (but may not be readable)");
+                        mod.Logger.Log($"Successfully loaded mesh: {meshName}");
                         return loadedMesh; // Return the mesh directly, don't try to copy
                     }
                 }
                 
                 // If no mesh found with common names, get all meshes and use the first one
+                mod.Logger.Log("Checking all meshes in bundle...");
                 var allMeshes = loadedAssetBundle.LoadAllAssets<Mesh>();
+                mod.Logger.Log($"Found {allMeshes.Length} meshes in bundle");
+                
                 if (allMeshes != null && allMeshes.Length > 0)
                 {
+                    for (int i = 0; i < allMeshes.Length; i++)
+                    {
+                        mod.Logger.Log($"  Mesh {i}: {allMeshes[i].name}");
+                    }
                     loadedMesh = allMeshes[0];
-                    mod.Logger.Log($"Using first mesh found: {loadedMesh.name} (but may not be readable)");
+                    mod.Logger.Log($"Using first mesh: {loadedMesh.name}");
                     return loadedMesh; // Return the mesh directly, don't try to copy
                 }
                 
@@ -164,8 +215,6 @@ namespace JunctionSwitchReplacer.AssetLoading
                     }
                 }
                 
-                mod.Logger.Log("Attempting to load materials from AssetBundle...");
-                
                 // First try to get materials from GameObjects
                 var allGameObjects = loadedAssetBundle.LoadAllAssets<GameObject>();
                 
@@ -192,20 +241,6 @@ namespace JunctionSwitchReplacer.AssetLoading
                                     materials[i] = renderer.materials[i];
                                 }
                                 
-                                mod.Logger.Log($"Successfully loaded {materials.Length} materials from GameObject: {prefab.name}");
-                                for (int i = 0; i < materials.Length; i++)
-                                {
-                                    mod.Logger.Log($"  Material {i}: {materials[i]?.name ?? "null"}");
-                                    if (materials[i]?.shader != null)
-                                    {
-                                        mod.Logger.Log($"    Shader: {materials[i].shader.name}");
-                                    }
-                                    if (materials[i]?.mainTexture != null)
-                                    {
-                                        mod.Logger.Log($"    Main texture: {materials[i].mainTexture.name}");
-                                    }
-                                }
-                                
                                 UnityEngine.Object.DestroyImmediate(instance);
                                 return materials;
                             }
@@ -220,19 +255,12 @@ namespace JunctionSwitchReplacer.AssetLoading
                 }
                 
                 // Fallback: Try direct material loading
-                mod.Logger.Log("No materials found in GameObjects, trying direct material loading...");
                 var allMaterials = loadedAssetBundle.LoadAllAssets<Material>();
                 if (allMaterials != null && allMaterials.Length > 0)
                 {
-                    mod.Logger.Log($"Found {allMaterials.Length} materials in AssetBundle");
-                    for (int i = 0; i < allMaterials.Length; i++)
-                    {
-                        mod.Logger.Log($"  Material {i}: {allMaterials[i]?.name ?? "null"}");
-                    }
                     return allMaterials;
                 }
                 
-                mod.Logger.Warning("No materials found in AssetBundle");
                 return null;
             }
             catch (Exception ex)

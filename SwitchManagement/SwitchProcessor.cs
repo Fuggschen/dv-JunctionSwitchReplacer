@@ -35,8 +35,6 @@ namespace JunctionSwitchReplacer.SwitchManagement
             int modifiedCount = 0;
             int failedCount = 0;
             int foundRenderers = 0;
-            
-            mod.Logger.Log($"Found {switches.Length} VisualSwitch objects to process...");
 
             foreach (var visualSwitch in switches)
             {
@@ -61,7 +59,8 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 }
             }
 
-            mod.Logger.Log($"Processing complete:");
+            // Summary logging only
+            mod.Logger.Log($"Switch replacement completed:");
             mod.Logger.Log($"  - VisualSwitch objects: {switches.Length}");
             mod.Logger.Log($"  - Total MeshRenderers found: {foundRenderers}");
             mod.Logger.Log($"  - Successfully modified: {modifiedCount}");
@@ -83,8 +82,7 @@ namespace JunctionSwitchReplacer.SwitchManagement
 
             if (!modelManager.UseCustomModel)
             {
-                mod.Logger.Warning("No custom model available. Place model file in mod folder.");
-                return false;
+                return false; // Don't log warning here - it's already logged in ApplyModificationToAllSwitches
             }
 
             try
@@ -98,19 +96,10 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 // The VisualSwitch is just a trigger - find the actual switch models nearby
                 var nearbyRenderers = FindSwitchRenderersNearPosition(visualSwitch.transform.position);
                 
-                if (IsDebugLoggingEnabled)
-                {
-                    mod.Logger.Log($"Switch {visualSwitch.name}: Found {nearbyRenderers.Count} nearby switch renderers");
-                }
-                
                 bool anyModified = false;
 
                 foreach (var meshRenderer in nearbyRenderers)
                 {
-                    if (IsDebugLoggingEnabled)
-                    {
-                        mod.Logger.Log($"  Checking nearby renderer: {meshRenderer.name}");
-                    }
                     if (ApplyCustomMeshReplacement(meshRenderer.transform))
                     {
                         anyModified = true;
@@ -161,7 +150,6 @@ namespace JunctionSwitchReplacer.SwitchManagement
                                 renderer.materials = originalMeshComponent.originalMaterials;
                             }
                             
-                            mod.Logger.Log($"Restored object: {originalMeshComponent.name}");
                             restoredCount++;
                         }
                         
@@ -236,10 +224,6 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 if (IsSwitchPoleRenderer(renderer))
                 {
                     results.Add(renderer);
-                    if (IsDebugLoggingEnabled)
-                    {
-                        mod.Logger.Log($"    Found switch pole renderer '{renderer.name}' at distance {distance:F2}");
-                    }
                 }
             }
             
@@ -260,22 +244,12 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 if (name.Contains("lever") || name.Contains("handle") || name.Contains("arm") || 
                     name.Contains("actuator") || name.Contains("moving"))
                 {
-                    if (IsDebugLoggingEnabled)
-                    {
-                        mod.Logger.Log($"    Skipping moving part: {current.name}");
-                    }
                     return false;
                 }
                 
                 // Look specifically for switch signs/poles
-                if (name.Contains("switch_sign") || name.Contains("switchsign") ||
-                    (name.Contains("switch") && name.Contains("sign")) ||
-                    (name.Contains("switch") && name.Contains("pole")))
+                if (name.Contains("switch_sign"))
                 {
-                    if (IsDebugLoggingEnabled)
-                    {
-                        mod.Logger.Log($"    Found switch sign/pole: {current.name}");
-                    }
                     return true;
                 }
                 
@@ -299,10 +273,6 @@ namespace JunctionSwitchReplacer.SwitchManagement
                     (meshName.Contains("switch") && meshName.Contains("sign")) ||
                     (meshName.Contains("switch") && meshName.Contains("pole")))
                 {
-                    if (IsDebugLoggingEnabled)
-                    {
-                        mod.Logger.Log($"    Found switch sign/pole mesh: {meshFilter.mesh.name}");
-                    }
                     return true;
                 }
             }
@@ -318,16 +288,7 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 var renderer = meshTransform.GetComponent<Renderer>();
                 if (meshFilter?.mesh == null || renderer == null) 
                 {
-                    if (IsDebugLoggingEnabled)
-                    {
-                        mod.Logger.Warning("No MeshFilter or Renderer found on transform");
-                    }
                     return false;
-                }
-                
-                if (IsDebugLoggingEnabled)
-                {
-                    mod.Logger.Log($"Original mesh: {meshFilter.mesh.name} (vertices: {meshFilter.mesh.vertexCount})");
                 }
                 
                 // Store original mesh and materials for restoration
@@ -337,28 +298,13 @@ namespace JunctionSwitchReplacer.SwitchManagement
                     originalMeshComponent = meshTransform.gameObject.AddComponent<OriginalMeshReference>();
                     originalMeshComponent.originalMesh = meshFilter.mesh;
                     originalMeshComponent.originalMaterials = renderer.materials; // Store materials too
-                    if (IsDebugLoggingEnabled)
-                    {
-                        mod.Logger.Log("Stored original mesh and materials for restoration");
-                    }
                 }
                 
                 // Load custom mesh
                 Mesh customMesh = modelManager.LoadCustomMesh();
                 if (customMesh == null)
                 {
-                    if (IsDebugLoggingEnabled)
-                    {
-                        mod.Logger.Warning("Custom mesh is null - LoadCustomMesh failed");
-                    }
                     return false;
-                }
-                
-                if (IsDebugLoggingEnabled)
-                {
-                    mod.Logger.Log($"Custom mesh: {customMesh.name} (vertices: {customMesh.vertexCount})");
-                    mod.Logger.Log($"Custom mesh has UV coordinates: {customMesh.uv != null && customMesh.uv.Length > 0}");
-                    mod.Logger.Log($"Custom mesh has normals: {customMesh.normals != null && customMesh.normals.Length > 0}");
                 }
                 
                 // Try to preserve the original UV mapping by copying it to the custom mesh
@@ -372,9 +318,7 @@ namespace JunctionSwitchReplacer.SwitchManagement
                     var originalUVs = new Vector2[customMesh.vertexCount];
                     Array.Copy(meshFilter.mesh.uv, originalUVs, Math.Min(customMesh.vertexCount, meshFilter.mesh.uv.Length));
                     customMesh.uv = originalUVs;
-                    if (IsDebugLoggingEnabled)
                     {
-                        mod.Logger.Log("Applied original UV coordinates to custom mesh");
                     }
                 }
                 
@@ -423,30 +367,6 @@ namespace JunctionSwitchReplacer.SwitchManagement
                     }
                 }
                 
-                if (IsDebugLoggingEnabled)
-                {
-                    // Log current material info after replacement
-                    mod.Logger.Log($"Final renderer has {renderer.materials.Length} materials:");
-                    for (int i = 0; i < renderer.materials.Length; i++)
-                    {
-                        var mat = renderer.materials[i];
-                        mod.Logger.Log($"  Material {i}: {mat?.name ?? "null"}");
-                        if (mat?.mainTexture != null)
-                        {
-                            mod.Logger.Log($"    Main texture: {mat.mainTexture.name}");
-                            mod.Logger.Log($"    Texture size: {mat.mainTexture.width}x{mat.mainTexture.height}");
-                            
-                            // Try to save the texture for reference
-                            SaveTextureFromMaterial(mat, i);
-                        }
-                        if (mat?.shader != null)
-                        {
-                            mod.Logger.Log($"    Shader: {mat.shader.name}");
-                        }
-                    }
-                    
-                    mod.Logger.Log($"Mesh replacement complete. New mesh: {meshFilter.mesh.name}");
-                }
                 return true;
             }
             catch (Exception ex)

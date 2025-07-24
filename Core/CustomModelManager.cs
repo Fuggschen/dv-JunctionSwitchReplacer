@@ -46,7 +46,8 @@ namespace JunctionSwitchReplacer.Core
                     {
                         customModelPath = fullPath;
                         useCustomModel = true;
-                        mod.Logger.Log($"Found AssetBundle: {fileName}");
+                        if (Main.settings?.enableDebugLogging == true)
+                            mod.Logger.Log($"Found AssetBundle: {fileName}");
                         return;
                     }
                 }
