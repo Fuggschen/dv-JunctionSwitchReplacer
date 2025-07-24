@@ -308,18 +308,22 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 }
                 
                 // Try to preserve the original UV mapping by copying it to the custom mesh
-                if (meshFilter.mesh.uv != null && meshFilter.mesh.uv.Length > 0 && 
-                    customMesh.vertexCount <= meshFilter.mesh.vertexCount)
+                // Only attempt this if the original mesh is readable (to avoid Unity errors)
+                try
                 {
-                    if (IsDebugLoggingEnabled)
+                    if (meshFilter.mesh.isReadable && 
+                        meshFilter.mesh.uv != null && meshFilter.mesh.uv.Length > 0 && 
+                        customMesh.vertexCount <= meshFilter.mesh.vertexCount)
                     {
-                        mod.Logger.Log("Attempting to preserve original UV mapping...");
+                        var originalUVs = new Vector2[customMesh.vertexCount];
+                        Array.Copy(meshFilter.mesh.uv, originalUVs, Math.Min(customMesh.vertexCount, meshFilter.mesh.uv.Length));
+                        customMesh.uv = originalUVs;
                     }
-                    var originalUVs = new Vector2[customMesh.vertexCount];
-                    Array.Copy(meshFilter.mesh.uv, originalUVs, Math.Min(customMesh.vertexCount, meshFilter.mesh.uv.Length));
-                    customMesh.uv = originalUVs;
-                    {
-                    }
+                }
+                catch (Exception)
+                {
+                    // Silently ignore UV copying errors - the custom mesh should have its own UVs
+                    // This happens when trying to read UV data from non-readable Unity meshes
                 }
                 
                 // Replace the mesh with our custom version
