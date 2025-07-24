@@ -27,7 +27,7 @@ Junction Switch Replacer is a Unity Mod Manager mod for Derail Valley that provi
 ## Change Model
 
 1. Create an Assetbundle with Unity. It should contain the Model as .obj and a Material with the Textures applied
-2. Replace the "switchmodel" file within the Mod Folder
+2. Add the Assetbundle file within the Mod Folder. Make sure it has the ".assetbundle" fileextention
 3. Reload the File within the Mod Settings or restart the Game
 
 ### Contributing
