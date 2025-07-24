@@ -64,6 +64,7 @@ namespace JunctionSwitchReplacer
         {
             try
             {
+                var harmony = new Harmony(modEntry.Info.Id);
                 mod.Logger.Log("Unloading Junction Switch Replacer...");
                 
                 // Restore all modified switches
@@ -76,11 +77,17 @@ namespace JunctionSwitchReplacer
                 modelManager?.ClearCache();
                 AssetBundleLoader.UnloadAssetBundle();
                 
-                // Unpatch all Harmony patches
-                var harmony = new Harmony(modEntry.Info.Id);
-                harmony.UnpatchSelf();
+                // Unpatch Harmony
+                harmony.UnpatchAll();
 
                 mod.Logger.Log("Junction Switch Replacer unloaded successfully!");
+                
+                // Clear static references for proper reload
+                modelManager = null;
+                switchProcessor = null;
+                cacheManager = null;
+                mod = null;
+                settings = null;
                 return true;
             }
             catch (Exception ex)
@@ -131,21 +138,45 @@ namespace JunctionSwitchReplacer
             }
         }
 
-        private static void OnRestoreOriginal()
+        public static void OnRestoreOriginal()
         {
+            mod.Logger.Log("Restoring original switches...");
             switchProcessor.RestoreAllSwitches();
             modifiedSwitches.Clear();
             cacheManager.UpdateSwitchCountCache();
+            mod.Logger.Log("Restore original completed.");
         }
 
-        private static void OnReloadCustomModel()
+        public static void OnReloadCustomModel()
         {
-            modelManager.Initialize();
-            if (modelManager.UseCustomModel)
+            mod.Logger.Log("Reloading custom model...");
+            
+            try
             {
-                switchProcessor.RestoreAllSwitches();
-                modifiedSwitches.Clear();
-                switchProcessor.ApplyModificationToAllSwitches();
+                modelManager.Initialize();
+                mod.Logger.Log($"Model manager initialized. UseCustomModel: {modelManager.UseCustomModel}");
+                
+                if (modelManager.UseCustomModel)
+                {
+                    mod.Logger.Log("Restoring original switches before applying new model...");
+                    switchProcessor.RestoreAllSwitches();
+                    modifiedSwitches.Clear();
+                    
+                    mod.Logger.Log("Applying custom model to all switches...");
+                    switchProcessor.ApplyModificationToAllSwitches();
+                    cacheManager.UpdateSwitchCountCache();
+                    
+                    mod.Logger.Log("Custom model reload completed successfully.");
+                }
+                else
+                {
+                    mod.Logger.Warning("No custom model available after reload. Check asset bundle selection and file paths.");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                mod.Logger.Error($"Failed to reload custom model: {ex.Message}");
+                mod.Logger.Error($"Stack trace: {ex.StackTrace}");
             }
         }
     }
