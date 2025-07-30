@@ -3,7 +3,7 @@
     <TargetFramework>net48</TargetFramework>
     <AssemblyTitle>DV-JunctionSwitchReplacer</AssemblyTitle>
     <Product>DV-JunctionSwitchReplacer</Product>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
