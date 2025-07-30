@@ -10,6 +10,7 @@ namespace JunctionSwitchReplacer.AssetLoading
     public static class AssetBundleLoader
     {
         private static AssetBundle loadedAssetBundle = null;
+        private static string currentBundlePath = null;
         
         public static void UnloadAssetBundle()
         {
@@ -17,7 +18,54 @@ namespace JunctionSwitchReplacer.AssetLoading
             {
                 loadedAssetBundle.Unload(true);
                 loadedAssetBundle = null;
+                currentBundlePath = null;
             }
+        }
+        
+        // Force reload asset bundle (useful when materials become invalid)
+        public static void ForceReloadAssetBundle()
+        {
+            UnloadAssetBundle();
+        }
+        
+        // Check if the current asset bundle is still valid
+        private static bool IsAssetBundleValid()
+        {
+            return loadedAssetBundle != null && !loadedAssetBundle.Equals(null);
+        }
+        
+        // Ensure asset bundle is loaded and valid
+        private static bool EnsureAssetBundleLoaded(string bundlePath, UnityModManager.ModEntry mod)
+        {
+            // If we have a valid bundle and it's the same path, keep using it
+            if (IsAssetBundleValid() && currentBundlePath == bundlePath)
+            {
+                return true;
+            }
+            
+            // If we have a different bundle loaded, unload it first
+            if (loadedAssetBundle != null && currentBundlePath != bundlePath)
+            {
+                UnloadAssetBundle();
+            }
+            
+            // Load the new bundle
+            if (loadedAssetBundle == null)
+            {
+                loadedAssetBundle = AssetBundle.LoadFromFile(bundlePath);
+                if (loadedAssetBundle != null)
+                {
+                    currentBundlePath = bundlePath;
+                    return true;
+                }
+                else
+                {
+                    mod.Logger.Error($"Failed to load AssetBundle from: {bundlePath}");
+                    return false;
+                }
+            }
+            
+            return true;
         }
         
         public static Mesh LoadMeshFromAssetBundle(string bundlePath, UnityModManager.ModEntry mod)
@@ -32,14 +80,9 @@ namespace JunctionSwitchReplacer.AssetLoading
                     mod.Logger.Log($"Loading asset bundle from: {bundlePath}");
                 }
                 
-                // Unload previous AssetBundle if exists
-                UnloadAssetBundle();
-                
-                // Load the AssetBundle
-                loadedAssetBundle = AssetBundle.LoadFromFile(bundlePath);
-                if (loadedAssetBundle == null)
+                // Ensure the AssetBundle is loaded (but don't unload it if it's already the right one)
+                if (!EnsureAssetBundleLoaded(bundlePath, mod))
                 {
-                    mod.Logger.Error("Failed to load AssetBundle - bundle is null");
                     return null;
                 }
                 
@@ -204,15 +247,10 @@ namespace JunctionSwitchReplacer.AssetLoading
         {
             try
             {
-                // If we don't have an asset bundle loaded, load it
-                if (loadedAssetBundle == null)
+                // Ensure the AssetBundle is loaded and valid
+                if (!EnsureAssetBundleLoaded(bundlePath, mod))
                 {
-                    loadedAssetBundle = AssetBundle.LoadFromFile(bundlePath);
-                    if (loadedAssetBundle == null)
-                    {
-                        mod.Logger.Error("Failed to load AssetBundle for materials - bundle is null");
-                        return null;
-                    }
+                    return null;
                 }
                 
                 // First try to get materials from GameObjects

@@ -98,6 +98,10 @@ namespace JunctionSwitchReplacer.Core
             {
                 Main.OnReloadCustomModel();
             }
+            if (GUILayout.Button("Refresh Materials", GUILayout.Width(120)))
+            {
+                Main.OnRefreshMaterials();
+            }
             GUILayout.EndHorizontal();
         }
         

@@ -113,10 +113,14 @@ namespace JunctionSwitchReplacer.Core
         
         public Mesh LoadCustomMesh()
         {
-            if (customSwitchMesh != null)
+            // Check if we have a cached mesh and it's still valid
+            if (IsMeshValid())
             {
                 return customSwitchMesh;
             }
+            
+            // Clear invalid cache
+            customSwitchMesh = null;
 
             try
             {
@@ -162,12 +166,42 @@ namespace JunctionSwitchReplacer.Core
             AssetBundleLoader.UnloadAssetBundle();
         }
         
+        // Check if cached materials are still valid
+        private bool AreMaterialsValid()
+        {
+            if (customSwitchMaterials == null || customSwitchMaterials.Length == 0)
+                return false;
+                
+            // Check if any material is null or destroyed
+            foreach (var material in customSwitchMaterials)
+            {
+                if (material == null || material.Equals(null))
+                    return false;
+                    
+                // Check if the material's shader is missing (common sign of asset bundle unload)
+                if (material.shader == null || material.shader.Equals(null))
+                    return false;
+            }
+            
+            return true;
+        }
+        
+        // Check if cached mesh is still valid
+        private bool IsMeshValid()
+        {
+            return customSwitchMesh != null && !customSwitchMesh.Equals(null);
+        }
+        
         public Material[] LoadCustomMaterials()
         {
-            if (customSwitchMaterials != null)
+            // Check if we have cached materials and they're still valid
+            if (AreMaterialsValid())
             {
                 return customSwitchMaterials;
             }
+            
+            // Clear invalid cache
+            customSwitchMaterials = null;
 
             try
             {

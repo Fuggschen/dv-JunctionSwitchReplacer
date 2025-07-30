@@ -24,6 +24,10 @@ namespace JunctionSwitchReplacer
         
         // Track modified switches to avoid double-processing
         private static HashSet<int> modifiedSwitches = new HashSet<int>();
+        
+        // Material refresh timing
+        private static float lastMaterialCheck = 0f;
+        private const float MATERIAL_CHECK_INTERVAL = 5f; // Check every 5 seconds
 
         // Called when the mod is loaded
         static bool Load(UnityModManager.ModEntry modEntry)
@@ -58,6 +62,11 @@ namespace JunctionSwitchReplacer
             // Initialize model manager and cache
             modelManager.Initialize();
             cacheManager.UpdateSwitchCountCache();
+            
+            // Create a GameObject to handle Update calls for material checking
+            var updateHandler = new UnityEngine.GameObject("JunctionSwitchReplacerUpdater");
+            updateHandler.AddComponent<MaterialCheckUpdater>();
+            UnityEngine.Object.DontDestroyOnLoad(updateHandler);
         }
 
         static bool Unload(UnityModManager.ModEntry modEntry)
@@ -66,6 +75,13 @@ namespace JunctionSwitchReplacer
             {
                 var harmony = new Harmony(modEntry.Info.Id);
                 mod.Logger.Log("Unloading Junction Switch Replacer...");
+                
+                // Clean up update handler
+                var updateHandler = UnityEngine.GameObject.Find("JunctionSwitchReplacerUpdater");
+                if (updateHandler != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(updateHandler);
+                }
                 
                 // Restore all modified switches
                 switchProcessor?.RestoreAllSwitches();
@@ -178,6 +194,54 @@ namespace JunctionSwitchReplacer
                 mod.Logger.Error($"Failed to reload custom model: {ex.Message}");
                 mod.Logger.Error($"Stack trace: {ex.StackTrace}");
             }
+        }
+        
+        public static void OnRefreshMaterials()
+        {
+            mod.Logger.Log("Refreshing materials...");
+            
+            try
+            {
+                // Force clear the material cache and reload asset bundle
+                modelManager?.ClearCache();
+                AssetBundleLoader.ForceReloadAssetBundle();
+                
+                // Refresh materials on all switches
+                if (switchProcessor != null)
+                {
+                    switchProcessor.RefreshMaterialsIfNeeded();
+                    mod.Logger.Log("Materials refreshed successfully.");
+                }
+                else
+                {
+                    mod.Logger.Warning("Switch processor not initialized.");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                mod.Logger.Error($"Failed to refresh materials: {ex.Message}");
+            }
+        }
+        
+        // Internal method to check materials periodically
+        internal static void CheckMaterialsIfNeeded()
+        {
+            if (!enabled || switchProcessor == null) return;
+            
+            if (UnityEngine.Time.time - lastMaterialCheck >= MATERIAL_CHECK_INTERVAL)
+            {
+                switchProcessor.RefreshMaterialsIfNeeded();
+                lastMaterialCheck = UnityEngine.Time.time;
+            }
+        }
+    }
+    
+    // MonoBehaviour component to handle Update calls
+    internal class MaterialCheckUpdater : UnityEngine.MonoBehaviour
+    {
+        void Update()
+        {
+            Main.CheckMaterialsIfNeeded();
         }
     }
 }

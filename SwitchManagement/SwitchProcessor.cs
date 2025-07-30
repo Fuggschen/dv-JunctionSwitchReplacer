@@ -169,6 +169,55 @@ namespace JunctionSwitchReplacer.SwitchManagement
             }
         }
         
+        // Refresh materials on all modified switches if they've become invalid
+        public void RefreshMaterialsIfNeeded()
+        {
+            try
+            {
+                var originalMeshComponents = UnityEngine.Object.FindObjectsOfType<OriginalMeshReference>();
+                int refreshedCount = 0;
+                
+                foreach (var originalMeshComponent in originalMeshComponents)
+                {
+                    var renderer = originalMeshComponent.GetComponent<Renderer>();
+                    if (renderer != null && renderer.materials != null)
+                    {
+                        // Check if any material is invalid (shows as pink)
+                        bool needsRefresh = false;
+                        foreach (var material in renderer.materials)
+                        {
+                            if (material == null || material.Equals(null) || 
+                                material.shader == null || material.shader.Equals(null))
+                            {
+                                needsRefresh = true;
+                                break;
+                            }
+                        }
+                        
+                        if (needsRefresh)
+                        {
+                            // Reload and apply fresh materials
+                            var customMaterials = modelManager.LoadCustomMaterials();
+                            if (customMaterials != null && customMaterials.Length > 0)
+                            {
+                                renderer.materials = customMaterials;
+                                refreshedCount++;
+                            }
+                        }
+                    }
+                }
+                
+                if (refreshedCount > 0)
+                {
+                    mod.Logger.Log($"Refreshed materials on {refreshedCount} switches");
+                }
+            }
+            catch (Exception ex)
+            {
+                mod.Logger.Error($"Failed to refresh materials: {ex.Message}");
+            }
+        }
+        
         private void DebugVisualSwitchStructure(VisualSwitch visualSwitch)
         {
             if (visualSwitch?.gameObject == null || !IsDebugLoggingEnabled) return;
