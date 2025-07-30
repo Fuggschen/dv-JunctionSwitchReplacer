@@ -45,10 +45,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Fuggschen**
 
-## Version
-
-Current version: 0.1
-
 ## Support
 
 If you encounter any issues or have suggestions, please open an issue on the [GitHub repository](../../issues).
