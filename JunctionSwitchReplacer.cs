@@ -180,6 +180,15 @@ namespace JunctionSwitchReplacer
             }
         }
         
+        public static void TriggerMaterialRefresh()
+        {
+            // Called by CustomModelManager when materials need to be refreshed on existing switches
+            if (switchProcessor != null)
+            {
+                switchProcessor.RefreshMaterialsIfNeeded();
+            }
+        }
+        
         public static void OnRefreshMaterials()
         {
             mod.Logger.Log("Manual material refresh triggered...");
