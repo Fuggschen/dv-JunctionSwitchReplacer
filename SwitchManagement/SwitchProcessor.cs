@@ -69,7 +69,7 @@ namespace JunctionSwitchReplacer.SwitchManagement
         
         public bool ApplyMeshModificationToSwitch(VisualSwitch visualSwitch)
         {
-            if (visualSwitch?.gameObject == null) 
+            if (visualSwitch?.gameObject == null || visualSwitch.Equals(null)) 
             {
                 return false;
             }
@@ -77,7 +77,16 @@ namespace JunctionSwitchReplacer.SwitchManagement
             int switchId = visualSwitch.GetInstanceID();
             if (modifiedSwitches.Contains(switchId))
             {
-                return true; // Already modified
+                // Double-check that the switch still exists and has valid components
+                if (visualSwitch?.gameObject != null && !visualSwitch.Equals(null))
+                {
+                    return true; // Already modified and still valid
+                }
+                else
+                {
+                    // Switch was destroyed, remove it from the modified set
+                    modifiedSwitches.Remove(switchId);
+                }
             }
 
             if (!modelManager.UseCustomModel)
@@ -113,7 +122,10 @@ namespace JunctionSwitchReplacer.SwitchManagement
                 }
                 else if (nearbyRenderers.Count == 0)
                 {
-                    mod.Logger.Warning($"No suitable renderers found near switch: {visualSwitch.name}");
+                    if (IsDebugLoggingEnabled)
+                    {
+                        mod.Logger.Warning($"No suitable renderers found near switch: {visualSwitch.name}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -176,18 +188,22 @@ namespace JunctionSwitchReplacer.SwitchManagement
             {
                 var originalMeshComponents = UnityEngine.Object.FindObjectsOfType<OriginalMeshReference>();
                 int refreshedCount = 0;
+                int totalChecked = 0;
                 
                 foreach (var originalMeshComponent in originalMeshComponents)
                 {
                     var renderer = originalMeshComponent.GetComponent<Renderer>();
                     if (renderer != null && renderer.materials != null)
                     {
-                        // Check if any material is invalid (shows as pink)
+                        totalChecked++;
+                        
+                        // Check if any material is invalid (shows as pink/purple)
                         bool needsRefresh = false;
                         foreach (var material in renderer.materials)
                         {
                             if (material == null || material.Equals(null) || 
-                                material.shader == null || material.shader.Equals(null))
+                                material.shader == null || material.shader.Equals(null) ||
+                                material.shader.name.Contains("Hidden/InternalErrorShader"))
                             {
                                 needsRefresh = true;
                                 break;
@@ -203,13 +219,24 @@ namespace JunctionSwitchReplacer.SwitchManagement
                                 renderer.materials = customMaterials;
                                 refreshedCount++;
                             }
+                            else
+                            {
+                                mod.Logger.Warning("Failed to load custom materials for refresh");
+                            }
                         }
                     }
                 }
                 
-                if (refreshedCount > 0)
+                if (totalChecked > 0)
                 {
-                    mod.Logger.Log($"Refreshed materials on {refreshedCount} switches");
+                    if (refreshedCount > 0)
+                    {
+                        mod.Logger.Log($"Refreshed materials on {refreshedCount} of {totalChecked} switches");
+                    }
+                    else if (Main.settings?.enableDebugLogging == true)
+                    {
+                        mod.Logger.Log($"Checked {totalChecked} switches - no material refresh needed");
+                    }
                 }
             }
             catch (Exception ex)
