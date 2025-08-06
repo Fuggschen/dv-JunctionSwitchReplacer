@@ -13,6 +13,7 @@ namespace JunctionSwitchReplacer.Core
         private static Material[] customSwitchMaterials = null;
         private static string customModelPath = "";
         private static bool useCustomModel = false;
+        private static bool isReloading = false; // Prevent multiple simultaneous reloads
         
         private readonly UnityModManager.ModEntry mod;
         
@@ -119,50 +120,26 @@ namespace JunctionSwitchReplacer.Core
                 return customSwitchMesh;
             }
             
-            // Clear invalid cache
-            customSwitchMesh = null;
-
-            try
+            // If already reloading, wait for it to complete
+            if (isReloading)
             {
-                // Only load from AssetBundle
-                if (!string.IsNullOrEmpty(customModelPath) && File.Exists(customModelPath))
+                if (Main.settings?.enableDebugLogging == true)
                 {
-                    string fileName = Path.GetFileName(customModelPath).ToLower();
-                    
-                    // Check if this is an AssetBundle (.assetbundle extension or specific names without extension)
-                    if (fileName.EndsWith(".assetbundle") || 
-                        fileName == "switchmodel" || fileName == "switch_sign" || fileName == "custom_switch")
-                    {
-                        mod.Logger.Log($"Loading AssetBundle: {customModelPath}");
-                        customSwitchMesh = AssetBundleLoader.LoadMeshFromAssetBundle(customModelPath, mod);
-                        if (customSwitchMesh != null)
-                        {
-                            mod.Logger.Log("Successfully loaded mesh from AssetBundle!");
-                            return customSwitchMesh;
-                        }
-                        else
-                        {
-                            mod.Logger.Warning("AssetBundle mesh loading returned null");
-                        }
-                    }
+                    mod.Logger.Log("Asset bundle reload already in progress for mesh, returning cached mesh...");
                 }
-                
-                mod.Logger.Warning("No valid AssetBundle found. Place 'switchmodel' AssetBundle in mod folder.");
-                useCustomModel = false;
-                return null;
+                return customSwitchMesh; // Return current state, even if null
             }
-            catch (Exception ex)
-            {
-                mod.Logger.Error($"Failed to load custom mesh: {ex.Message}");
-                useCustomModel = false;
-                return null;
-            }
+            
+            // Trigger a complete reload of both mesh and materials
+            ReloadAssetBundle();
+            return customSwitchMesh;
         }
         
         public void ClearCache()
         {
             customSwitchMesh = null;
             customSwitchMaterials = null;
+            // Don't reset isReloading flag here - let the reload process manage it
             AssetBundleLoader.UnloadAssetBundle();
         }
         
@@ -200,34 +177,75 @@ namespace JunctionSwitchReplacer.Core
                 return customSwitchMaterials;
             }
             
-            // Clear invalid cache
-            customSwitchMaterials = null;
-
+            // If already reloading, wait for it to complete
+            if (isReloading)
+            {
+                if (Main.settings?.enableDebugLogging == true)
+                {
+                    mod.Logger.Log("Asset bundle reload already in progress for materials, returning cached materials...");
+                }
+                return customSwitchMaterials; // Return current state, even if null
+            }
+            
+            // Trigger a complete reload of both mesh and materials
+            ReloadAssetBundle();
+            return customSwitchMaterials;
+        }
+        
+        private void ReloadAssetBundle()
+        {
+            if (isReloading)
+            {
+                return; // Already reloading
+            }
+            
+            mod.Logger.Log("Asset bundle invalid - reloading mesh and materials...");
+            isReloading = true;
+            
             try
             {
-                // Only load from AssetBundle
+                // Clear cache and reload asset bundle
+                ClearCache();
+                AssetBundleLoader.ForceReloadAssetBundle();
+
+                // Load both mesh and materials from AssetBundle
                 if (!string.IsNullOrEmpty(customModelPath) && File.Exists(customModelPath))
                 {
-                    mod.Logger.Log($"Loading materials from AssetBundle: {customModelPath}");
-                    customSwitchMaterials = AssetBundleLoader.LoadMaterialsFromAssetBundle(customModelPath, mod);
-                    if (customSwitchMaterials != null && customSwitchMaterials.Length > 0)
+                    string fileName = Path.GetFileName(customModelPath).ToLower();
+                    
+                    // Check if this is an AssetBundle (.assetbundle extension or specific names without extension)
+                    if (fileName.EndsWith(".assetbundle") || 
+                        fileName == "switchmodel" || fileName == "switch_sign" || fileName == "custom_switch")
                     {
-                        mod.Logger.Log($"Successfully loaded {customSwitchMaterials.Length} materials from AssetBundle!");
-                        return customSwitchMaterials;
-                    }
-                    else
-                    {
-                        mod.Logger.Warning("AssetBundle material loading returned null or empty");
+                        mod.Logger.Log($"Loading AssetBundle: {customModelPath}");
+                        
+                        // Load mesh
+                        customSwitchMesh = AssetBundleLoader.LoadMeshFromAssetBundle(customModelPath, mod);
+                        if (customSwitchMesh != null)
+                        {
+                            mod.Logger.Log("Successfully loaded mesh from AssetBundle!");
+                        }
+                        
+                        // Load materials
+                        customSwitchMaterials = AssetBundleLoader.LoadMaterialsFromAssetBundle(customModelPath, mod);
+                        if (customSwitchMaterials != null && customSwitchMaterials.Length > 0)
+                        {
+                            mod.Logger.Log($"Successfully loaded {customSwitchMaterials.Length} materials from AssetBundle!");
+                            
+                            // Apply the refreshed materials to all existing switches
+                            mod.Logger.Log("Applying refreshed materials to existing switches...");
+                            Main.TriggerMaterialRefresh();
+                        }
                     }
                 }
-                
-                mod.Logger.Warning("No materials found in AssetBundle");
-                return null;
             }
             catch (Exception ex)
             {
-                mod.Logger.Error($"Failed to load custom materials: {ex.Message}");
-                return null;
+                mod.Logger.Error($"Failed to reload asset bundle: {ex.Message}");
+            }
+            finally
+            {
+                isReloading = false; // Always reset flag
             }
         }
         
