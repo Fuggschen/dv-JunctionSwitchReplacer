@@ -1,6 +1,7 @@
 {
   "Releases":
   [
+      {"Id": "JunctionSwitchReplacer", "Version": "0.3.2", "DownloadUrl": "https://github.com/Fuggschen/dv-JunctionSwitchReplacer/releases/download/v0.3.2/JunctionSwitchReplacer_v0.3.2.zip"},
       {"Id": "JunctionSwitchReplacer", "Version": "0.3.1", "DownloadUrl": "https://github.com/Fuggschen/dv-JunctionSwitchReplacer/releases/download/v0.3.1/JunctionSwitchReplacer_v0.3.1.zip"},
       {"Id": "JunctionSwitchReplacer", "Version": "0.3.0", "DownloadUrl": "https://github.com/Fuggschen/dv-JunctionSwitchReplacer/releases/download/v0.3.0/JunctionSwitchReplacer_v0.3.0.zip"},
       {"Id": "JunctionSwitchReplacer", "Version": "0.2.0", "DownloadUrl": "https://github.com/Fuggschen/dv-JunctionSwitchReplacer/releases/download/v0.2.0/JunctionSwitchReplacer_v0.2.0.zip"},

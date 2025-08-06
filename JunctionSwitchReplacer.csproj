@@ -3,22 +3,24 @@
     <TargetFramework>net48</TargetFramework>
     <AssemblyTitle>DV-JunctionSwitchReplacer</AssemblyTitle>
     <Product>DV-JunctionSwitchReplacer</Product>
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+	  <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <PrivateAssets>all</PrivateAssets>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="Assembly-CSharp" />
-    <Reference Include="UnityEngine" />
-    <Reference Include="UnityEngine.AudioModule" />
-    <Reference Include="UnityEngine.AssetBundleModule" />
-    <Reference Include="UnityEngine.CoreModule" />
-    <Reference Include="UnityEngine.IMGUIModule" />
-    <Reference Include="UnityEngine.UnityWebRequestModule" />
-    <Reference Include="UnityEngine.UnityWebRequestAudioModule" />
-    <Reference Include="UnityEngine.PhysicsModule" />
-    <Reference Include="UnityModManager" />
-    <Reference Include="0Harmony" />
+    <Reference Include="Assembly-CSharp" Private="false"/>
+    <Reference Include="UnityEngine" Private="false"/>
+    <Reference Include="UnityEngine.AudioModule" Private="false"/>
+    <Reference Include="UnityEngine.AssetBundleModule" Private="false"/>
+    <Reference Include="UnityEngine.CoreModule" Private="false"/>
+    <Reference Include="UnityEngine.IMGUIModule" Private="false"/>
+    <Reference Include="UnityEngine.UnityWebRequestModule" Private="false"/>
+    <Reference Include="UnityEngine.UnityWebRequestAudioModule" Private="false"/>
+    <Reference Include="UnityEngine.PhysicsModule" Private="false"/>
+    <Reference Include="UnityModManager" Private="false"/>
+    <Reference Include="0Harmony" Private="false"/>
   </ItemGroup>
 </Project>
