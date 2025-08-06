@@ -16,7 +16,7 @@ namespace JunctionSwitchReplacer.AssetLoading
         {
             if (loadedAssetBundle != null)
             {
-                loadedAssetBundle.Unload(true);
+                loadedAssetBundle.Unload(false);
                 loadedAssetBundle = null;
                 currentBundlePath = null;
             }
