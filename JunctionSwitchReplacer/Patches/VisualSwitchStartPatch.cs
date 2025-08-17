@@ -1,7 +1,10 @@
 using System;
+
 using HarmonyLib;
-using UnityModManagerNet;
+
 using JunctionSwitchReplacer.SwitchManagement;
+
+using UnityModManagerNet;
 
 namespace JunctionSwitchReplacer.Patches
 {
@@ -12,23 +15,23 @@ namespace JunctionSwitchReplacer.Patches
         private static SwitchProcessor switchProcessor;
         private static bool enabled;
         private static UnityModManager.ModEntry mod;
-        
+
         public static void Initialize(SwitchProcessor processor, UnityModManager.ModEntry modEntry, bool isEnabled)
         {
             switchProcessor = processor;
             mod = modEntry;
             enabled = isEnabled;
         }
-        
+
         public static void SetEnabled(bool isEnabled)
         {
             enabled = isEnabled;
         }
-        
+
         static void Postfix(VisualSwitch __instance)
         {
             if (!enabled || switchProcessor == null) return;
-            
+
             try
             {
                 // Apply modification to newly spawned switches

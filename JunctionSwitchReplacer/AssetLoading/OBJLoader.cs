@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+
 using UnityEngine;
+
 using UnityModManagerNet;
 
 namespace JunctionSwitchReplacer.AssetLoading
@@ -16,12 +18,12 @@ namespace JunctionSwitchReplacer.AssetLoading
                 var vertices = new List<Vector3>();
                 var triangles = new List<int>();
                 var uvs = new List<Vector2>();
-                
+
                 foreach (string line in lines)
                 {
                     string[] parts = line.Trim().Split(' ');
                     if (parts.Length < 2) continue;
-                    
+
                     switch (parts[0])
                     {
                         case "v": // Vertex
@@ -33,7 +35,7 @@ namespace JunctionSwitchReplacer.AssetLoading
                                 vertices.Add(new Vector3(x, y, z));
                             }
                             break;
-                            
+
                         case "vt": // UV
                             if (parts.Length >= 3)
                             {
@@ -42,7 +44,7 @@ namespace JunctionSwitchReplacer.AssetLoading
                                 uvs.Add(new Vector2(u, v));
                             }
                             break;
-                            
+
                         case "f": // Face
                             if (parts.Length >= 4)
                             {
@@ -59,13 +61,13 @@ namespace JunctionSwitchReplacer.AssetLoading
                             break;
                     }
                 }
-                
+
                 if (vertices.Count > 0 && triangles.Count > 0)
                 {
                     var mesh = new Mesh();
                     mesh.vertices = vertices.ToArray();
                     mesh.triangles = triangles.ToArray();
-                    
+
                     // Ensure we have UV coordinates
                     if (uvs.Count == vertices.Count)
                     {
@@ -76,7 +78,7 @@ namespace JunctionSwitchReplacer.AssetLoading
                         // Generate cylindrical UV mapping for switch poles
                         var generatedUVs = new Vector2[vertices.Count];
                         var bounds = GetMeshBounds(vertices);
-                        
+
                         for (int i = 0; i < vertices.Count; i++)
                         {
                             var v = vertices[i];
@@ -87,11 +89,11 @@ namespace JunctionSwitchReplacer.AssetLoading
                         }
                         mesh.uv = generatedUVs;
                     }
-                    
+
                     mesh.RecalculateNormals();
                     mesh.RecalculateBounds();
                     mesh.name = "Custom OBJ Switch Setter";
-                    
+
                     return mesh;
                 }
             }
@@ -99,23 +101,23 @@ namespace JunctionSwitchReplacer.AssetLoading
             {
                 mod.Logger.Error($"Failed to parse OBJ content: {ex.Message}");
             }
-            
+
             return null;
         }
 
         private static Bounds GetMeshBounds(List<Vector3> vertices)
         {
             if (vertices.Count == 0) return new Bounds();
-            
+
             Vector3 min = vertices[0];
             Vector3 max = vertices[0];
-            
+
             foreach (var v in vertices)
             {
                 min = Vector3.Min(min, v);
                 max = Vector3.Max(max, v);
             }
-            
+
             return new Bounds((min + max) * 0.5f, max - min);
         }
     }

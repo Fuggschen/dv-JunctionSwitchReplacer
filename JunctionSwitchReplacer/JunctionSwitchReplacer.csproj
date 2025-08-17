@@ -3,7 +3,7 @@
     <TargetFramework>net48</TargetFramework>
     <AssemblyTitle>DV-JunctionSwitchReplacer</AssemblyTitle>
     <Product>DV-JunctionSwitchReplacer</Product>
-    <Version>0.3.2</Version>
+    <Version>0.3.3</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
 	  <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
