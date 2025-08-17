@@ -24,11 +24,17 @@ Junction Switch Replacer is a Unity Mod Manager mod for Derail Valley that provi
 2. Download the latest release from the [Releases](../../releases) page
 3. Install via Unity Mod Manager
 
-## Change Model
+## Add your own Model
 
-1. Create an Assetbundle with Unity. It should contain the Model as .obj and a Material with the Textures applied
-2. Add the Assetbundle file within the Mod Folder. Make sure it has the ".assetbundle" fileextention
-3. Reload the File within the Mod Settings or restart the Game
+1. Open the `JunctionSwitchReplacer.Unity` Folder with `Unity 2019.4.40f1`.
+2. Add a new Folder and place your model and textures into it
+3. Create a material and apply it to your model
+4. Create a new AssetBundle tag in the Inspector window (bottom right, AssetBundle dropdown)
+5. Name your AssetBundle tag (e.g., "customswitch")
+6. Select your model and material, then assign the AssetBundle tag to both
+7. Go to `Assets > Build AssetBundles` to export your custom model
+8. Copy the generated AssetBundle file to your Derail Valley mods folder
+
 
 ### Contributing
 
